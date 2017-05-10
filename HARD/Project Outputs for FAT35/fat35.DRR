@@ -1,0 +1,28 @@
+---------------------------------------------------------------------------
+NCDrill File Report For: fat35.PcbDoc   10.01.2011  1:03:06
+---------------------------------------------------------------------------
+
+
+
+Layer Pair : Top Layer to Bottom Layer
+ASCII File : NCDrillOutput.TXT
+EIA File   : NCDrillOutput.DRL
+
+Tool         Hole Size          Hole Count Plated       Tool Travel
+---------------------------------------------------------------------------
+T1        0.6mm (23.622mil)        211              1392.97 mm (54.84 Inch)
+T2        0.85mm (33.465mil)       4                133.30 mm (5.25 Inch)
+T3        0.95mm (37.402mil)       11               154.75 mm (6.09 Inch)
+T4        1mm (39.37mil)           79               446.80 mm (17.59 Inch)
+T5        1.3mm (51.181mil)        5                132.89 mm (5.23 Inch)
+T6        1.5mm (59.055mil)        9                141.89 mm (5.59 Inch)
+T7        3.2mm (125.984mil)       2                144.41 mm (5.69 Inch)
+T8        3.5mm (137.795mil)       8                478.48 mm (18.84 Inch)
+---------------------------------------------------------------------------
+Totals                             329              3025.50 mm (119.11 Inch)
+
+Two holes at same point : 1
+-----------------------
+2167,394
+
+Total Processing Time : 0:00:09
