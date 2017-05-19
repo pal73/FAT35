@@ -67,11 +67,11 @@
  133  0049 00            	dc.b	page(f_NonHandledInterrupt)
  134  004a 0000          	dc.w	f_NonHandledInterrupt
  135  004c 82            	dc.b	130
- 137  004d 00            	dc.b	page(f_NonHandledInterrupt)
- 138  004e 0000          	dc.w	f_NonHandledInterrupt
+ 137  004d 00            	dc.b	page(f_UARTTxInterrupt)
+ 138  004e 0000          	dc.w	f_UARTTxInterrupt
  139  0050 82            	dc.b	130
- 141  0051 00            	dc.b	page(f_NonHandledInterrupt)
- 142  0052 0000          	dc.w	f_NonHandledInterrupt
+ 141  0051 00            	dc.b	page(f_UARTRxInterrupt)
+ 142  0052 0000          	dc.w	f_UARTRxInterrupt
  143  0054 82            	dc.b	130
  145  0055 00            	dc.b	page(f_NonHandledInterrupt)
  146  0056 0000          	dc.w	f_NonHandledInterrupt
@@ -106,8 +106,10 @@
  185  007d 00            	dc.b	page(f_NonHandledInterrupt)
  186  007e 0000          	dc.w	f_NonHandledInterrupt
  249                     	xdef	__vectab
- 250                     	xref	f_TIM1_Ovf_Interrupt
- 251                     	xref	__stext
- 252                     	xref	f_TIM4_UPD_Interrupt
- 253                     	xdef	f_NonHandledInterrupt
- 272                     	end
+ 250                     	xref	f_UARTRxInterrupt
+ 251                     	xref	f_UARTTxInterrupt
+ 252                     	xref	f_TIM1_Ovf_Interrupt
+ 253                     	xref	__stext
+ 254                     	xref	f_TIM4_UPD_Interrupt
+ 255                     	xdef	f_NonHandledInterrupt
+ 274                     	end

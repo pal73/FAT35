@@ -3,6 +3,7 @@
 #include <iostm8s103.h>
 #include "ibatton.h"
 #include "main.h"
+#include <stdio.h>
 
 //#pragma section @eeprom [aaa]
 
@@ -14,6 +15,7 @@
 //char tx_buffer[30]={1,2,3,4,5,6,7,8};
 char spi(char in);
 
+#define FORGSM
 
 
 
@@ -95,6 +97,23 @@ char plazma_ibatton2=2;
 //Отладка
 signed short plazma_SS;
 
+#define TX_BUFFER_SIZE	80
+#define RX_BUFFER_SIZE	100
+
+@near char tx_buffer[TX_BUFFER_SIZE]={0};
+@near signed char tx_counter;
+signed char tx_wr_index,tx_rd_index;
+@near char rx_buffer[RX_BUFFER_SIZE]={0};
+signed short rx_counter;
+signed short rx_wr_index,rx_rd_index;
+char bOUT_FREE;
+char rx_status;
+char rx_data;
+char bRXIN;
+char rx_buffer_overflow;
+//@near char UIB[40];
+
+signed short plazma[5]={1234,574,89,0,-1};
 //-----------------------------------------------
 void bin2bcd_long(unsigned long in);
 //-----------------------------------------------
@@ -490,6 +509,49 @@ void but_an(void) {
 	bFIRE_=0;
 	bFIRE1=0;
 }
+
+//-----------------------------------------------
+void putchar(char c)
+{
+while (tx_counter == TX_BUFFER_SIZE);
+///#asm("cli")
+if (tx_counter || ((UART1->SR & UART1_SR_TXE)==0))
+   {
+   tx_buffer[tx_wr_index]=c;
+   if (++tx_wr_index == TX_BUFFER_SIZE) tx_wr_index=0;
+   ++tx_counter;
+   }
+else UART1->DR=c;
+
+UART1->CR2|= UART1_CR2_TIEN;
+///#asm("sei")
+}
+
+//-----------------------------------------------
+void uart_init (void){
+	GPIOD->DDR|=(1<<5);
+	GPIOD->CR1|=(1<<5);
+	GPIOD->CR2|=(1<<5);
+	//GPIOD->ODR|=(1<<5);	
+
+	GPIOD->DDR&=~(1<<6);
+	GPIOD->CR1&=~(1<<6);
+	GPIOD->CR2&=~(1<<6);
+	//GPIOD->ODR|=(1<<6);	
+	
+	UART1->CR1&=~UART1_CR1_M;					
+	UART1->CR3|= (0<<4) & UART1_CR3_STOP;	
+	UART1->BRR2= 0x03;//0x01;
+	UART1->BRR1= 0x68;//0x1a;
+	UART1->CR2|= UART1_CR2_TEN | UART3_CR2_REN | UART3_CR2_RIEN;	
+}
+
+//-----------------------------------------------
+void uart_in(void)
+{
+
+}
+
 //-----------------------------------------------
 void in_button(void) {
 	short i,ii;
@@ -624,16 +686,31 @@ void target_an (void) {
 }
 //-----------------------------------------------
 void rele_drv (void) {
+#ifndef FORGSM	
+GPIOD->DDR|=(1<<6);	
+GPIOD->CR1|=(1<<6);
+GPIOD->CR2&=~(1<<6);
 	
-	GPIOD->DDR|=(1<<6);	
-	GPIOD->CR1|=(1<<6);
-	GPIOD->CR2&=~(1<<6);
-	
-	if(rele_cnt){
-		rele_cnt--;
-		GPIOD->ODR|=(1<<6);
+if(rele_cnt)
+	{
+	rele_cnt--;
+	GPIOD->ODR|=(1<<6);
 	}
-	else GPIOD->ODR&=~(1<<6);
+else GPIOD->ODR&=~(1<<6);
+#endif
+
+#ifdef FORGSM	
+GPIOB->DDR|=(1<<4);	
+GPIOB->CR1|=(1<<4);
+GPIOB->CR2&=~(1<<4);
+	
+if(rele_cnt)
+	{
+	rele_cnt--;
+	GPIOB->ODR|=(1<<4);
+	}
+else GPIOB->ODR&=~(1<<4);
+#endif
 }
 //-----------------------------------------------
 void wrk_hndl (void) {
@@ -674,9 +751,22 @@ void gpio_init(void){
 	GPIOD->CR2&=~0x01;
 	GPIOD->DDR|=0x01;	
 
+#ifdef FORGSM
+//вход от гашетки на новом месте 
+	GPIOB->DDR&=~(1<<5);	
+	GPIOB->CR1|=(1<<5);
+	GPIOB->CR2&=~(1<<5);
+	
+/*	для UARTa GPIOD->DDR&=~(1<<5);	
+	GPIOD->CR1|=(1<<5);
+	GPIOD->CR2&=~(1<<5);*/
+#endif
+#ifndef FORGSM
+//вход от гашетки
 	GPIOD->DDR&=~(1<<5);	
 	GPIOD->CR1|=(1<<5);
 	GPIOD->CR2&=~(1<<5);
+#endif
 
 	GPIOB->DDR&=~(1<<5);	
 	GPIOB->CR1|=(1<<5);
@@ -831,55 +921,118 @@ void t4_init(void){
 	
 	if(zatvor_cnt) zatvor_cnt--;
 
-	if(!(GPIOD->IDR&(1<<5))) {
-		if(!cnt_bFIRE) {
-			bFIRE=1;
-			cnt_bFIRE=50;
+#ifndef FORGSM
+if(!(GPIOD->IDR&(1<<5))) 
+#endif
+#ifdef FORGSM
+if(!(GPIOB->IDR&(1<<5))) 
+#endif
+	{
+	if(!cnt_bFIRE) 
+		{
+		bFIRE=1;
+		cnt_bFIRE=50;
 		}
 	}                       
-	else {
-		if(cnt_bFIRE)cnt_bFIRE--;
-		bZATVOR=0;
-		but_cnt=0;
+else 
+	{
+	if(cnt_bFIRE)cnt_bFIRE--;
+	bZATVOR=0;
+	but_cnt=0;
 	}
 
-	if(!(GPIOD->IDR&(1<<5))) {
-		cnt_bFIRE_++;
-		if(cnt_bFIRE_>2000) {
-			bFIRE_=1;
-			bFIRE_BLOCK=1;
-			cnt_bFIRE_=0;
-			
-		}
-	}                       
-	else {
+#ifndef FORGSM
+if(!(GPIOD->IDR&(1<<5))) 
+#endif
+#ifdef FORGSM
+if(!(GPIOB->IDR&(1<<5))) 
+#endif
+	{
+	cnt_bFIRE_++;
+	if(cnt_bFIRE_>2000) 
+		{
+		bFIRE_=1;
+		bFIRE_BLOCK=1;
 		cnt_bFIRE_=0;
-	}
-
-	if((!(GPIOD->IDR&(1<<5))) && (!bFIRE_BLOCK)) {
-		cnt_bFIRE1++;
-		if(cnt_bFIRE1>=50) {
-			cnt_bFIRE1=50;
 		}
 	}                       
-	else {
-		if(cnt_bFIRE1>=50) {
-			bFIRE1=1;
-			cnt_bFIRE1=0;
-			
-		}
-	
+else 
+	{
+	cnt_bFIRE_=0;
 	}
-	if(GPIOD->IDR&(1<<5)) bFIRE_BLOCK=0;
+
+#ifndef FORGSM
+if((!(GPIOD->IDR&(1<<5)))&& (!bFIRE_BLOCK)) 
+#endif
+#ifdef FORGSM
+if((!(GPIOB->IDR&(1<<5)))&& (!bFIRE_BLOCK)) 
+#endif
+	{
+	cnt_bFIRE1++;
+	if(cnt_bFIRE1>=50) 
+		{
+		cnt_bFIRE1=50;
+		}
+	}                       
+else 
+	{
+	if(cnt_bFIRE1>=50) 
+		{
+		bFIRE1=1;
+		cnt_bFIRE1=0;
+		}
+	}
+
+#ifndef FORGSM
+if(GPIOD->IDR&(1<<5)) bFIRE_BLOCK=0;
+#endif
+#ifdef FORGSM
+if(GPIOB->IDR&(1<<5)) bFIRE_BLOCK=0;
+#endif 
 	
-	TIM4->SR1&=~TIM4_SR1_UIF;			// disable break interrupt
-	return;
+TIM4->SR1&=~TIM4_SR1_UIF;			// disable break interrupt
+return;
 }
 //***********************************************
 @far @interrupt void TIM1_Ovf_Interrupt (void) {
 	GPIOD->ODR^=(1<<3)|(1<<4);
 	TIM1->SR1&=~TIM1_SR1_UIF;			
 }
+
+//***********************************************
+@far @interrupt void UARTTxInterrupt (void) {
+
+	if (tx_counter){
+		--tx_counter;
+		UART1->DR=tx_buffer[tx_rd_index];
+		if (++tx_rd_index == TX_BUFFER_SIZE) tx_rd_index=0;
+	}
+	else {
+		bOUT_FREE=1;
+		UART1->CR2&= ~UART1_CR2_TIEN;
+	}
+}
+
+//***********************************************
+@far @interrupt void UARTRxInterrupt (void) {
+
+	//char status=0,data=0;
+	
+	//GPIOD->ODR^=(1<<4);
+	rx_status=UART1->SR;
+	rx_data=UART1->DR;
+	
+	if (rx_status & (UART1_SR_RXNE)){
+		rx_buffer[rx_wr_index]=rx_data;
+		bRXIN=1;
+		if (++rx_wr_index == RX_BUFFER_SIZE) rx_wr_index=0;
+		if (++rx_counter == RX_BUFFER_SIZE){
+			rx_counter=0;
+			rx_buffer_overflow=1;
+		}
+	}
+}
+
 //===============================================
 //===============================================
 //===============================================
@@ -951,65 +1104,95 @@ GPIOF->DDR|=(1<<4);*/
 	
 	t4_init();
 	enableInterrupts();	
-	
-	while (1){
-		
-		if(b1000Hz){
-			b1000Hz=0;
-			opto_drv();
-			target_drv();
-			target_an();
-			rele_drv();
-			if(not_fire_cnt)not_fire_cnt--;
-      	}  	
-		
-		if(b100Hz){
-			b100Hz=0;
+
+#ifdef FORGSM
+uart_init();
+#endif
+
+
+while (1)
+	{
+	if(bRXIN)	
+		{
+		bRXIN=0;
 			
-			ibatton_drv();
-			ibatton_an();
-			but_an();
-      	}  
+		uart_in();
+		}
+
+	if(b1000Hz)
+		{
+		b1000Hz=0;
+		opto_drv();
+		target_drv();
+		target_an();
+		rele_drv();
+		if(not_fire_cnt)not_fire_cnt--;
+		}  	
+		
+	if(b100Hz)
+		{
+		b100Hz=0;
+			
+		ibatton_drv();
+		ibatton_an();
+		but_an();
+		}  
       	
-		if(b10Hz){
-			b10Hz=0;
+	if(b10Hz)
+		{
+		b10Hz=0;
 			//DF_status_read();
 			
-			ind_hndl();
-			if(ret_cnt){
-				ret_cnt--;
-				if(ret_cnt==0){
-					ind=ret_ind;
+		ind_hndl();
+		if(ret_cnt)
+			{
+			ret_cnt--;
+			if(ret_cnt==0)
+				{
+				ind=ret_ind;
 				}
 			}
-			if(ret_cnt1){
-				ret_cnt1--;
-				if(ret_cnt1==0){
-					ind=iWait2;
-					EE_FISK_CNT1++;
-					if(EE_FISK_CNT1>=100)EE_FISK_CNT1=0;
-					EE_REMAIN_BALLS=0;
-					ret_cnt=0;
+		if(ret_cnt1)
+			{
+			ret_cnt1--;
+			if(ret_cnt1==0)
+				{
+				ind=iWait2;
+				EE_FISK_CNT1++;
+				if(EE_FISK_CNT1>=100)EE_FISK_CNT1=0;
+				EE_REMAIN_BALLS=0;
+				ret_cnt=0;
 				}
 			}
 			
-      	}
+		}
       	 
-		if(b5Hz){
-			b5Hz=0;
+	if(b5Hz)
+		{
+		b5Hz=0;
 		//GPIOF->ODR^=(1<<4);	
 		}
 		
-		if(b2Hz){
-			b2Hz=0;
+	if(b2Hz)
+		{
+		b2Hz=0;
 			
-      	}      
+		}      
 
-		if(b1Hz){
-			b1Hz=0;
+	if(b1Hz)
+		{
+		char *uart_buff;
+		b1Hz=0;
+		
+		
+		//putchar('A');
+		
+		uart_buff="Hello %d,%x,%d,%d,%x\r\n";
+		//printf(uart_buff,plazma[0],plazma[1],plazma[2],plazma[3]++,plazma[4]);
+		puts("Hello"+itoa(plazma[0]));
+		
+		wrk_hndl();
 			
-			wrk_hndl();
-			
-      	}      	     	      
+		}      	     	      
 	}
 }

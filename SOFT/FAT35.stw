@@ -10,6 +10,10 @@ Dependencies=
 [Project1]
 Filename=fat35\fat35.stp
 Dependencies=
+
+[Project2]
+Filename=..\..\fat32_dev\soft\fat32_6\fat32_6.stp
+Dependencies=
 [Options]
 ActiveProject=fat35
 ActiveConfig=Debug

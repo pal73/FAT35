@@ -42,10 +42,10 @@
    Tip: To avoid modifying this file each time you need to switch between these
         devices, you can define the device in your toolchain compiler preprocessor. */
 #if !defined (STM8S208) && !defined (STM8S207) && !defined (STM8S105) && !defined (STM8S103) && !defined (STM8S903)
- #define STM8S208
+ /*#define STM8S208*/
  /* #define STM8S207 */
  /* #define STM8S105 */  
- /* #define STM8S103 */
+  #define STM8S103 
  /* #define STM8S903 */
 #endif
 
