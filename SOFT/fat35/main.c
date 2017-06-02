@@ -135,6 +135,7 @@ for(i=0;i<10;i++)
 	in/=10L;
 	}
 }
+
 //-----------------------------------------------
 void bin2bcd_int(unsigned short in) {
 
@@ -146,6 +147,7 @@ for(i=0;i<5;i++)
 	in/=10;
 	}
 }
+
 //-----------------------------------------------
 void bcd2ind(void) {
 char i;
@@ -1187,9 +1189,9 @@ while (1)
 		
 		//putchar('A');
 		
-		uart_buff="Hello %d,%x,%d,%d,%x\r\n";
-		//printf(uart_buff,plazma[0],plazma[1],plazma[2],plazma[3]++,plazma[4]);
-		puts("Hello"+itoa(plazma[0]));
+		uart_buff="Hello %d,%d,%d,%d,%x\r\n";
+		printf(uart_buff,SERIAL_NUMBER,EE_FISK_CNT,plazma[2],plazma[3]++,plazma[4]);
+		//puts("Hello"+itoa(plazma[0]));
 		
 		wrk_hndl();
 			
